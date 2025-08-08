@@ -1,0 +1,246 @@
+﻿@{
+    ViewData["Title"] = "Paket Satın Al";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - PossiLicence</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="~/css/payment-page.css" asp-append-version="true" />
+</head>
+
+<body class="payment-page">
+    <div class="payment-background">
+        <!-- Background Animation -->
+        <div class="floating-elements">
+            <div class="floating-element"></div>
+            <div class="floating-element"></div>
+            <div class="floating-element"></div>
+        </div>
+
+        <!-- Header -->
+        <div class="payment-header">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h2 class="brand-title">
+                            <i class="fas fa-shield-alt me-2"></i>
+                            PossiLicence
+                        </h2>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="company-info">
+                            <h5 class="text-white">@ViewBag.Company.CompanyName</h5>
+                            <small class="text-white-50">ID: @ViewBag.Company.UniqId</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-12">
+                    <!-- Payment Modal (Auto-open) -->
+                    <div class="modal fade show" id="paymentModal" tabindex="-1" style="display: block;" data-bs-backdrop="static" data-bs-keyboard="false">
+                        <div class="modal-dialog modal-xl">
+                            <div class="modal-content payment-modal">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">
+                                        <i class="fas fa-shopping-cart me-2"></i>
+                                        Paket Satın Al
+                                    </h5>
+                                    <div class="step-indicator">
+                                        <div class="step active" id="step1-indicator">
+                                            <span class="step-number">1</span>
+                                            <span class="step-label">Paket Seçimi</span>
+                                        </div>
+                                        <div class="step-line"></div>
+                                        <div class="step" id="step2-indicator">
+                                            <span class="step-number">2</span>
+                                            <span class="step-label">Bilgiler</span>
+                                        </div>
+                                        <div class="step-line"></div>
+                                        <div class="step" id="step3-indicator">
+                                            <span class="step-number">3</span>
+                                            <span class="step-label">Ödeme</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="modal-body">
+                                    <!-- Step 1: Package Selection -->
+                                    <div class="payment-step active" id="step1">
+                                        <div class="step-header">
+                                            <h4><i class="fas fa-box me-2"></i>Paket Seçimi</h4>
+                                            <p class="text-muted">Size uygun paketi seçin</p>
+                                        </div>
+
+                                        <div class="packages-grid">
+                                            @foreach (var package in ViewBag.Packages)
+                                            {
+                                                <div class="package-card" data-package-id="@package.Id" onclick="selectPackage(this)">
+                                                    <div class="package-header">
+                                                        <h5>@package.Caption</h5>
+                                                        <div class="package-price">
+                                                            @package.Price.ToString("N2") ₺
+                                                        </div>
+                                                    </div>
+                                                    <div class="package-features">
+                                                        <div class="feature">
+                                                            <i class="fas fa-calendar-alt me-2"></i>
+                                                            @if (package.DayCount.HasValue)
+                                                            {
+                                                                <span>@package.MonthCount ay + @package.DayCount gün</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span>@package.MonthCount ay</span>
+                                                            }
+                                                        </div>
+                                                        <div class="feature">
+                                                            <i class="fas fa-info-circle me-2"></i>
+                                                            <span>@package.Description</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="package-select">
+                                                        <button type="button" class="btn btn-primary-custom">
+                                                            <i class="fas fa-check me-2"></i>
+                                                            Bu Paketi Seç
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <!-- Step 2: Customer Information -->
+                                    <div class="payment-step" id="step2">
+                                        <div class="step-header">
+                                            <h4><i class="fas fa-user me-2"></i>Müşteri Bilgileri</h4>
+                                            <p class="text-muted">Bilgilerinizi kontrol edin ve eksik olanları doldurun</p>
+                                        </div>
+
+                                        <form id="customerForm">
+                                            <input type="hidden" id="selectedPackageId" name="packageId">
+                                            <input type="hidden" name="companyUniqId" value="@ViewBag.Company.UniqId">
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Firma Adı *</label>
+                                                        <input type="text" class="form-control" id="companyName" value="@ViewBag.Company.CompanyName" readonly>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Firma ID</label>
+                                                        <input type="text" class="form-control" value="@ViewBag.Company.UniqId" readonly>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Yetkili Adı Soyadı *</label>
+                                                        <input type="text" class="form-control" name="fullName" id="fullName" value="@ViewBag.Company.FullName" required>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Telefon Numarası *</label>
+                                                        <input type="tel" class="form-control" name="phone" id="phone" value="@ViewBag.Company.PhoneNumber" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">E-posta Adresi *</label>
+                                                        <input type="email" class="form-control" name="email" id="email" required>
+                                                        <small class="text-muted">Fatura ve onay e-postası bu adrese gönderilecektir</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Fatura Adresi *</label>
+                                                        <textarea class="form-control" name="address" id="address" rows="3" required placeholder="Fatura adresi..."></textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Selected Package Summary -->
+                                            <div class="selected-package-summary">
+                                                <h6><i class="fas fa-shopping-cart me-2"></i>Seçilen Paket</h6>
+                                                <div class="package-summary-card">
+                                                    <div class="row align-items-center">
+                                                        <div class="col-md-8">
+                                                            <h6 id="selectedPackageName">-</h6>
+                                                            <p class="mb-0" id="selectedPackageDuration">-</p>
+                                                            <small class="text-muted" id="selectedPackageDescription">-</small>
+                                                        </div>
+                                                        <div class="col-md-4 text-end">
+                                                            <h5 class="text-primary mb-0" id="selectedPackagePrice">-</h5>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+
+                                    <!-- Step 3: Payment -->
+                                    <div class="payment-step" id="step3">
+                                        <div class="step-header">
+                                            <h4><i class="fas fa-credit-card me-2"></i>Güvenli Ödeme</h4>
+                                            <p class="text-muted">PayTR güvenli ödeme altyapısı ile ödenecektir</p>
+                                        </div>
+
+                                        <div class="payment-iframe-container">
+                                            <div class="payment-loading">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Ödeme sayfası yükleniyor...</span>
+                                                </div>
+                                                <p class="mt-3">Güvenli ödeme sayfası hazırlanıyor...</p>
+                                            </div>
+                                            <iframe id="paymentIframe" style="display: none;" frameborder="0" scrolling="no"></iframe>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" id="prevBtn" onclick="previousStep()" style="display: none;">
+                                        <i class="fas fa-arrow-left me-2"></i>Geri
+                                    </button>
+                                    <button type="button" class="btn btn-primary-custom" id="nextBtn" onclick="nextStep()" disabled>
+                                        Devam Et<i class="fas fa-arrow-right ms-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- PayTR iframe resizer -->
+    <script src="https://www.paytr.com/js/iframeResizer.min.js"></script>
+    <!-- Custom JS -->
+    <script src="~/js/payment-process.js" asp-append-version="true"></script>
+</body>
+</html>

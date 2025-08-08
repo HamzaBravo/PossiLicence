@@ -21,6 +21,7 @@ public class PaymentController : Controller
         _configuration = configuration;
     }
 
+
     // GET: payment/{uniqId}
     [HttpGet("{uniqId}")]
     public async Task<IActionResult> Index(int uniqId)
