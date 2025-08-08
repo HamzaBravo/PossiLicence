@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using PossiLicence.Context;
+using PossiLicence.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,10 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 builder.Services.AddAuthorization();
+
+// Service Registration 
+builder.Services.AddHttpClient<IPayTRService, PayTRService>();
+builder.Services.AddScoped<IPayTRService, PayTRService>();
 
 
 var app = builder.Build();

@@ -1,0 +1,88 @@
+﻿@{
+    ViewData["Title"] = "Ödeme Başarısız";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - PossiLicence</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .fail-container {
+            margin-top: 50px;
+        }
+
+        .fail-card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .fail-icon {
+            font-size: 4rem;
+            color: #dc3545;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container fail-container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card fail-card">
+                    <div class="card-body text-center p-5">
+                        <div class="fail-icon">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+
+                        <h2 class="text-danger mb-4">Ödeme Başarısız!</h2>
+                        <p class="lead">Ödeme işlemi tamamlanamadı.</p>
+
+                        @if (ViewBag.Company != null)
+                        {
+                            <div class="alert alert-warning">
+                                <h5><i class="fas fa-building"></i> @ViewBag.Company.CompanyName</h5>
+                                <p class="mb-0">Ödeme işlemi iptal edildi veya hata oluştu.</p>
+                            </div>
+                        }
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Ne yapabilirsiniz?</strong>
+                            <ul class="list-unstyled mt-2">
+                                <li>• Tekrar ödeme yapmayı deneyebilirsiniz</li>
+                                <li>• Kart bilgilerinizi kontrol edin</li>
+                                <li>• Farklı bir ödeme yöntemi deneyin</li>
+                            </ul>
+                        </div>
+
+                        <hr>
+                        <small class="text-muted">
+                            Sipariş No: @ViewBag.OrderId<br>
+                            Sorun devam ederse destek ekibimizle iletişime geçin.
+                        </small>
+
+                        <div class="mt-4">
+                            <a href="javascript:history.back()" class="btn btn-warning me-2">
+                                <i class="fas fa-arrow-left"></i> Tekrar Dene
+                            </a>
+                            <a href="/" class="btn btn-secondary">
+                                <i class="fas fa-home"></i> Ana Sayfa
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

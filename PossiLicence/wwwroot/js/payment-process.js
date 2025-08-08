@@ -2,12 +2,36 @@
 
 let currentStep = 1;
 let selectedPackage = null;
-let packagesData = @Html.Raw(Json.Serialize(ViewBag.Packages));
+let packagesData = [];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function () {
+    loadPackagesData();
     updateUI();
 });
+
+function loadPackagesData() {
+    // Bu veri zaten HTML'de mevcut, DOM'dan alalım
+    const packageCards = document.querySelectorAll('.package-card');
+    packagesData = Array.from(packageCards).map(card => ({
+        id: card.dataset.packageId,
+        caption: card.querySelector('h5').textContent,
+        price: parseFloat(card.querySelector('.package-price').textContent.replace(/[^\d.,]/g, '').replace(',', '.')),
+        monthCount: extractMonthCount(card.querySelector('.feature').textContent),
+        dayCount: extractDayCount(card.querySelector('.feature').textContent),
+        description: card.querySelector('.feature:last-child span').textContent
+    }));
+}
+
+function extractMonthCount(text) {
+    const match = text.match(/(\d+)\s*ay/);
+    return match ? parseInt(match[1]) : 0;
+}
+
+function extractDayCount(text) {
+    const match = text.match(/\+\s*(\d+)\s*gün/);
+    return match ? parseInt(match[1]) : null;
+}
 
 function selectPackage(packageElement) {
     // Remove previous selection

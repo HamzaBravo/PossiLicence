@@ -1,6 +1,9 @@
-﻿@{
+﻿@using System.Collections
+@using PossiLicence.Entityies
+@{
     ViewData["Title"] = "Paket Satın Al";
     Layout = null;
+    var packages = ViewBag.Packages as IEnumerable<PackageTypeDbEntity>;
 }
 
 <!DOCTYPE html>
@@ -86,42 +89,53 @@
                                             <p class="text-muted">Size uygun paketi seçin</p>
                                         </div>
 
-                                        <div class="packages-grid">
-                                            @foreach (var package in ViewBag.Packages)
-                                            {
-                                                <div class="package-card" data-package-id="@package.Id" onclick="selectPackage(this)">
-                                                    <div class="package-header">
-                                                        <h5>@package.Caption</h5>
-                                                        <div class="package-price">
-                                                            @package.Price.ToString("N2") ₺
+                                        @if (packages?.Any() == true)
+                                        {
+                                            <div class="packages-grid">
+                                                @foreach (var package in packages.Where(p => p != null))
+                                                {
+                                                    <div class="package-card" data-package-id="@package.Id" onclick="selectPackage(this)">
+                                                        <div class="package-header">
+                                                            <h5>@package.Caption</h5>
+                                                            <div class="package-price">
+                                                                @package.Price.ToString("N2") ₺
+                                                            </div>
+                                                        </div>
+                                                        <div class="package-features">
+                                                            <div class="feature">
+                                                                <i class="fas fa-calendar-alt me-2"></i>
+                                                                @if (package.DayCount.HasValue)
+                                                                {
+                                                                    <span>@package.MonthCount ay + @package.DayCount.Value gün</span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span>@package.MonthCount ay</span>
+                                                                }
+                                                            </div>
+                                                            <div class="feature">
+                                                                <i class="fas fa-info-circle me-2"></i>
+                                                                <span>@package.Description</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="package-select">
+                                                            <button type="button" class="btn btn-primary-custom">
+                                                                <i class="fas fa-check me-2"></i>
+                                                                Bu Paketi Seç
+                                                            </button>
                                                         </div>
                                                     </div>
-                                                    <div class="package-features">
-                                                        <div class="feature">
-                                                            <i class="fas fa-calendar-alt me-2"></i>
-                                                            @if (package.DayCount.HasValue)
-                                                            {
-                                                                <span>@package.MonthCount ay + @package.DayCount gün</span>
-                                                            }
-                                                            else
-                                                            {
-                                                                <span>@package.MonthCount ay</span>
-                                                            }
-                                                        </div>
-                                                        <div class="feature">
-                                                            <i class="fas fa-info-circle me-2"></i>
-                                                            <span>@package.Description</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="package-select">
-                                                        <button type="button" class="btn btn-primary-custom">
-                                                            <i class="fas fa-check me-2"></i>
-                                                            Bu Paketi Seç
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            }
-                                        </div>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="alert alert-warning text-center">
+                                                <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                                                <h5>Henüz Paket Bulunmuyor</h5>
+                                                <p>Şu anda satın alınabilir paket bulunmamaktadır.</p>
+                                            </div>
+                                        }
                                     </div>
 
                                     <!-- Step 2: Customer Information -->

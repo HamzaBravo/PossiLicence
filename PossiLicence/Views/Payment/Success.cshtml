@@ -1,0 +1,92 @@
+﻿@{
+    ViewData["Title"] = "Ödeme Başarılı";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - PossiLicence</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .success-container {
+            margin-top: 50px;
+        }
+
+        .success-card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container success-container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card success-card">
+                    <div class="card-body text-center p-5">
+                        <div class="success-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+
+                        <h2 class="text-success mb-4">Ödeme Başarılı!</h2>
+                        <p class="lead">Lisans paketiniz başarıyla satın alındı.</p>
+
+                        @if (ViewBag.Company != null)
+                        {
+                            <div class="alert alert-success">
+                                <h5><i class="fas fa-building"></i> @ViewBag.Company.CompanyName</h5>
+                                <p class="mb-0">
+                                    <strong>Yeni Lisans Bitiş Tarihi:</strong><br>
+                                    @ViewBag.Company.EndDate?.ToString("dd.MM.yyyy")
+                                </p>
+                            </div>
+                        }
+
+                        @if (ViewBag.Package != null)
+                        {
+                            <div class="row text-start mt-4">
+                                <div class="col-6">
+                                    <strong>Paket:</strong><br>
+                                    @ViewBag.Package.Caption
+                                </div>
+                                <div class="col-6">
+                                    <strong>Ücret:</strong><br>
+                                    @ViewBag.Package.Price.ToString("N2") ₺
+                                </div>
+                            </div>
+                        }
+
+                        <hr>
+                        <small class="text-muted">
+                            Sipariş No: @ViewBag.OrderId<br>
+                            Fatura e-postanıza gönderilecektir.
+                        </small>
+
+                        <div class="mt-4">
+                            <a href="/" class="btn btn-primary">
+                                <i class="fas fa-home"></i> Ana Sayfaya Dön
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
