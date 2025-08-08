@@ -3,7 +3,20 @@
     Layout = null;
 }
 
-<link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - PossiLicence</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Custom Dashboard CSS -->
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+</head>
 
 <body class="dashboard-page">
     <!-- Top Navigation -->
@@ -118,21 +131,24 @@
                 <div class="content-card">
                     <div class="content-card-header">
                         <h5 class="content-card-title">Son Aktiviteler</h5>
+                        <small class="text-muted">Son 15 işlem</small>
                     </div>
                     <div class="content-card-body">
                         <div class="table-responsive">
                             <table class="table table-custom">
                                 <thead>
                                     <tr>
-                                        <th width="15%">İşlem Tarihi</th>
-                                        <th width="25%">Firma Bilgisi</th>
-                                        <th width="20%">Lisans Bitiş Tarihi</th>
-                                        <th width="40%">Açıklama</th>
+                                        <th width="12%">İşlem Tarihi</th>
+                                        <th width="20%">Firma Bilgisi</th>
+                                        <th width="15%">Lisans Bitiş</th>
+                                        <th width="12%">İşlem Tipi</th>
+                                        <th width="8%">Durum</th>
+                                        <th width="33%">Açıklama</th>
                                     </tr>
                                 </thead>
                                 <tbody id="recentActivities">
                                     <tr>
-                                        <td colspan="4" class="text-center text-muted">
+                                        <td colspan="6" class="text-center text-muted">
                                             Henüz aktivite bulunmamaktadır.
                                         </td>
                                     </tr>
@@ -219,10 +235,284 @@
             </div>
         </div>
     </div>
+
+    <!-- Company Modal -->
+    <div class="modal fade" id="companyModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="companyModalTitle">Yeni Firma Ekle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="companyForm">
+                        <input type="hidden" id="companyId" name="companyId">
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="companyName" class="form-label">Firma Adı *</label>
+                                    <input type="text" class="form-control" id="companyName" name="companyName" required>
+                                    <div class="invalid-feedback">Firma adı gereklidir.</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="fullName" class="form-label">Yetkili Adı *</label>
+                                    <input type="text" class="form-control" id="fullName" name="fullName" required>
+                                    <div class="invalid-feedback">Yetkili adı gereklidir.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="phoneNumber" class="form-label">Telefon Numarası *</label>
+                                    <input type="tel" class="form-control" id="phoneNumber" name="phoneNumber" required>
+                                    <div class="invalid-feedback">Telefon numarası gereklidir.</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6" id="uniqIdDisplay" style="display: none;">
+                                <div class="mb-3">
+                                    <label class="form-label">Firma ID</label>
+                                    <input type="text" class="form-control" id="displayUniqId" readonly>
+                                    <small class="text-muted">Bu ID otomatik oluşturulur ve değiştirilemez.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" class="btn btn-primary-custom" id="saveCompanyBtn" onclick="saveCompany()">
+                        <span class="btn-text">Kaydet</span>
+                        <span class="btn-loading d-none">
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            Kaydediliyor...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteCompanyModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Firmayı Sil</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Bu firmayı silmek istediğinizden emin misiniz?</p>
+                    <p class="text-danger"><small>Bu işlem geri alınamaz.</small></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn" onclick="confirmDeleteCompany()">Sil</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Package Modal -->
+    <div class="modal fade" id="packageModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="packageModalTitle">Yeni Paket Ekle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="packageForm">
+                        <input type="hidden" id="packageId" name="packageId">
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="packageCaption" class="form-label">Paket Adı *</label>
+                                    <input type="text" class="form-control" id="packageCaption" name="packageCaption" required>
+                                    <div class="invalid-feedback">Paket adı gereklidir.</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="packagePrice" class="form-label">Fiyat (₺) *</label>
+                                    <input type="number" class="form-control" id="packagePrice" name="packagePrice" step="0.01" min="0" required>
+                                    <div class="invalid-feedback">Geçerli bir fiyat giriniz.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="packageMonthCount" class="form-label">Ay Sayısı *</label>
+                                    <input type="number" class="form-control" id="packageMonthCount" name="packageMonthCount" min="1" required>
+                                    <div class="invalid-feedback">En az 1 ay olmalıdır.</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="packageDayCount" class="form-label">Ek Gün Sayısı</label>
+                                    <input type="number" class="form-control" id="packageDayCount" name="packageDayCount" min="0">
+                                    <small class="text-muted">Opsiyonel - Bonus gün ekleyebilirsiniz</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="packageDescription" class="form-label">Açıklama *</label>
+                            <textarea class="form-control" id="packageDescription" name="packageDescription" rows="3" required></textarea>
+                            <div class="invalid-feedback">Paket açıklaması gereklidir.</div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Örnek:</strong> 3 aylık paket + 10 gün bonus = Toplam 100 gün kullanım hakkı
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" class="btn btn-primary-custom" id="savePackageBtn" onclick="savePackage()">
+                        <span class="btn-text">Kaydet</span>
+                        <span class="btn-loading d-none">
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            Kaydediliyor...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Package Confirmation Modal -->
+    <div class="modal fade" id="deletePackageModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Paketi Sil</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Bu paketi silmek istediğinizden emin misiniz?</p>
+                    <p class="text-danger"><small>Bu işlem geri alınamaz.</small></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeletePackageBtn" onclick="confirmDeletePackage()">Sil</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Package Modal -->
+    <div class="modal fade" id="assignPackageModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Firmaya Paket Ata</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Firma Bilgileri</h6>
+                            <div class="p-3 bg-light rounded">
+                                <strong id="assignCompanyName">-</strong><br>
+                                <small class="text-muted">Yetkili: <span id="assignCompanyContact">-</span></small><br>
+                                <small class="text-muted">Mevcut Bitiş: <span id="assignCurrentEndDate">-</span></small>
+                                <div id="currentPackageStatus" class="mt-2" style="display: none;">
+                                    <span class="badge" id="currentStatusBadge">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Paket Seçimi</h6>
+                            <select class="form-select" id="selectedPackageId" required>
+                                <option value="">Paket seçiniz...</option>
+                            </select>
+                            <div class="invalid-feedback">Lütfen bir paket seçiniz.</div>
+                        </div>
+                    </div>
+
+                    <div id="packagePreview" style="display: none;">
+                        <h6 class="text-muted">Seçilen Paket Detayları</h6>
+                        <div class="alert alert-info">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Paket:</strong> <span id="previewPackageName">-</span><br>
+                                    <strong>Süre:</strong> <span id="previewDuration">-</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Fiyat:</strong> <span id="previewPrice">-</span><br>
+                                    <strong>Yeni Bitiş:</strong> <span id="previewNewEndDate">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="assignToCompanyId">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" class="btn btn-success-custom" id="confirmAssignBtn" onclick="confirmAssignPackage()">
+                        <span class="btn-text">Paketi Ata</span>
+                        <span class="btn-loading d-none">
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            Atanıyor...
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Company Purchase History Modal -->
+    <div class="modal fade" id="purchaseHistoryModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Satın Alma Geçmişi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <h6 id="historyCompanyName" class="text-primary"></h6>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-custom">
+                            <thead>
+                                <tr>
+                                    <th>Tarih</th>
+                                    <th>Paket</th>
+                                    <th>Süre</th>
+                                    <th>Fiyat</th>
+                                    <th>İşlem Tipi</th>
+                                    <th>Durum</th>
+                                    <th>Açıklama</th>
+                                </tr>
+                            </thead>
+                            <tbody id="purchaseHistoryTable">
+                                <!-- Purchase history will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Dashboard JavaScript -->
+    <script src="~/js/dashboard.js" asp-append-version="true"></script>
 </body>
-
-<!-- FontAwesome -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-<!-- Dashboard JavaScript -->
-<script src="~/js/dashboard.js" asp-append-version="true"></script>
+</html>
