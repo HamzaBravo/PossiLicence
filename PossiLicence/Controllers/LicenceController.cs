@@ -9,17 +9,22 @@ namespace PossiLicence.Controllers;
 [ApiController]
 public class LicenceController(DBContext _dBContext) : ControllerBase
 {
-    [HttpPost]
-    public async Task<IActionResult> Get()
+    [HttpGet("checked-licance")]
+    public async Task<IActionResult> CheckedLicanceAsync(int companyId)
     {
-        try
-        {
-            var licences = await _dBContext.CompanyPurchases.ToListAsync();
-            return Ok(licences);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, $"Error retrieving data: {ex.Message}");
-        }
+        var datetime = DateTime.Now;
+
+        var company = await _dBContext.Companies.AsNoTracking().FirstOrDefaultAsync(x => x.UniqId == companyId);
+
+        if (company is null)
+            return StatusCode(StatusCodes.Status204NoContent, "Firma Bulunamadı");
+
+        if (company.EndDate is null)
+            return StatusCode(StatusCodes.Status204NoContent, "Firma Daha Önce Satın Alım Yapmamış.");
+
+        if (company.EndDate < datetime)
+            return StatusCode(StatusCodes.Status204NoContent, "Hizmet Süresi Sona Ermiş");
+
+        return StatusCode(StatusCodes.Status200OK, "Hizmet Süresi Devam Ediyor");
     }
 }
