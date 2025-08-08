@@ -48,69 +48,118 @@ public class PaymentController : Controller
     [HttpPost("process")]
     public async Task<IActionResult> ProcessPayment([FromForm] PaymentProcessRequest request)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        var company = await _dbContext.Companies
-            .FirstOrDefaultAsync(x => x.UniqId == request.CompanyUniqId);
-
-        var package = await _dbContext.PackageTypes
-            .FirstOrDefaultAsync(x => x.Id == request.PackageId && !x.IsDeleted);
-
-        if (company == null || package == null)
-            return BadRequest("Geçersiz firma veya paket.");
-
-        // Create unique order ID
-        var merchantOid = $"ORDER_{DateTime.Now:yyyyMMddHHmmss}_{company.UniqId}_{Guid.NewGuid():N}";
-
-        // User basket (required by PayTR)
-        var userBasket = JsonSerializer.Serialize(new[]
+        try
         {
-            new { name = package.Caption, price = package.Price.ToString("F2"), quantity = 1 }
-        });
+            if (!ModelState.IsValid)
+            {
+                return Json(new { success = false, message = "Form verileri eksik veya hatalı." });
+            }
 
-        var payTRRequest = new PayTRTokenRequest
-        {
-            merchant_id = _configuration["PayTR:MerchantId"],
-            user_ip = GetUserIP(),
-            merchant_oid = merchantOid,
-            email = request.Email,
-            payment_amount = (int)(package.Price * 100), // Convert to cents
-            user_basket = userBasket,
-            user_name = request.FullName,
-            user_address = request.Address,
-            user_phone = request.Phone,
-            merchant_ok_url = $"{Request.Scheme}://{Request.Host}/payment/success",
-            merchant_fail_url = $"{Request.Scheme}://{Request.Host}/payment/fail",
-            test_mode = _configuration.GetValue<bool>("PayTR:IsTestMode") ? 1 : 0
-        };
+            var company = await _dbContext.Companies
+                .FirstOrDefaultAsync(x => x.UniqId == request.CompanyUniqId);
 
-        var tokenResponse = await _payTRService.GetTokenAsync(payTRRequest);
+            var package = await _dbContext.PackageTypes
+                .FirstOrDefaultAsync(x => x.Id == request.PackageId && !x.IsDeleted);
 
-        if (tokenResponse.status != "success")
-        {
-            ViewBag.Error = tokenResponse.reason ?? "Ödeme başlatılamadı.";
-            return View("Error");
+            if (company == null)
+            {
+                return Json(new { success = false, message = "Firma bulunamadı." });
+            }
+
+            if (package == null)
+            {
+                return Json(new { success = false, message = "Seçilen paket bulunamadı." });
+            }
+
+            var timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
+            var randomId = Guid.NewGuid().ToString("N")[..8]; // İlk 8 karakter, tire yok
+            var merchantOid = $"ORDER{timestamp}{company.UniqId}{randomId}";
+
+
+            // User basket (required by PayTR)
+            var basketItems = new[]
+              {
+            new
+                {
+                    name = package.Caption,
+                    price = (package.Price * 100).ToString("F0"), // Kuruş cinsinden, ondalık yok
+                    quantity = "1"
+                }
+            };
+
+            var userBasket = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(basketItems)));
+
+            var payTRRequest = new PayTRTokenRequest
+            {
+                merchant_id = _configuration["PayTR:MerchantId"],
+                user_ip = GetUserIP(),
+                merchant_oid = merchantOid,
+                email = request.Email,
+                payment_amount = (int)(package.Price * 100), // Convert to cents
+                user_basket = userBasket,
+                user_name = request.FullName,
+                user_address = request.Address,
+                user_phone = request.Phone,
+                merchant_ok_url = _configuration["PayTR:SuccessUrl"],
+                merchant_fail_url = _configuration["PayTR:FailUrl"],
+                test_mode = _configuration.GetValue<bool>("PayTR:IsTestMode") ? 1 : 0
+            };
+
+            var tokenResponse = await _payTRService.GetTokenAsync(payTRRequest);
+
+            if (tokenResponse.status != "success")
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Ödeme sistemi hatası: " + (tokenResponse.reason ?? "Bilinmeyen hata")
+                });
+            }
+
+            // Save pending payment to database
+            var pendingPayment = new CompanyPurchaseDbEntity
+            {
+                CompanyId = company.Id,
+                PackageTypeId = package.Id,
+                Status = null, // Pending
+                Description = $"Ödeme işlemi başlatıldı. Sipariş No: {merchantOid}, Müşteri: {request.FullName}"
+            };
+
+            await _dbContext.CompanyPurchases.AddAsync(pendingPayment);
+            await _dbContext.SaveChangesAsync();
+
+
+            var order = new OrderDbEntity
+            {
+                CompanyId = company.Id,
+                PackageId = package.Id,
+                OrderNumber = merchantOid,
+                CompanyPurchasesId = pendingPayment.Id,
+                IpAdress = GetUserIP(),
+            };
+
+            await _dbContext.Orders.AddAsync(order);
+            await _dbContext.SaveChangesAsync();
+
+
+            return Json(new
+            {
+                success = true,
+                token = tokenResponse.token,
+                message = "Ödeme sayfası hazırlanıyor..."
+            });
         }
-
-        // Save pending payment to database
-        var pendingPayment = new CompanyPurchaseDbEntity
+        catch (Exception ex)
         {
-            CompanyId = company.Id,
-            PackageTypeId = package.Id,
-            Status = null, // Pending
-            Description = $"Ödeme işlemi başlatıldı. Sipariş No: {merchantOid}, Müşteri: {request.FullName}"
-        };
+            // Log the error (burada bir logging sistemi kullanmalısınız)
+            Console.WriteLine($"Payment process error: {ex.Message}");
 
-        _dbContext.CompanyPurchases.Add(pendingPayment);
-        await _dbContext.SaveChangesAsync();
-
-        ViewBag.Token = tokenResponse.token;
-        ViewBag.Company = company;
-        ViewBag.Package = package;
-        ViewBag.CustomerInfo = request;
-
-        return View("Payment");
+            return Json(new
+            {
+                success = false,
+                message = "Sistem hatası oluştu. Lütfen tekrar deneyin."
+            });
+        }
     }
 
 
@@ -130,18 +179,13 @@ public class PaymentController : Controller
                 return BadRequest("Invalid hash");
             }
 
-            // Sipariş bilgilerini parse et
-            var orderParts = callback.merchant_oid.Split('_');
-            if (orderParts.Length < 4)
-            {
-                return BadRequest("Invalid order format");
-            }
 
-            var companyUniqId = int.Parse(orderParts[2]);
+            var orders = await _dbContext.Orders.FirstOrDefaultAsync(x => x.OrderNumber == callback.merchant_oid);
+
 
             // Firma ve pending payment'ı bul
             var company = await _dbContext.Companies
-                .FirstOrDefaultAsync(x => x.UniqId == companyUniqId);
+                .FirstOrDefaultAsync(x => x.Id == orders.CompanyId);
 
             var pendingPayment = await _dbContext.CompanyPurchases
                 .Where(x => x.CompanyId == company.Id && x.Status == null)
@@ -224,28 +268,25 @@ public class PaymentController : Controller
 
         try
         {
-            // Sipariş bilgilerini parse et
-            var orderParts = merchant_oid.Split('_');
-            if (orderParts.Length >= 4)
-            {
-                var companyUniqId = int.Parse(orderParts[2]);
+            var order = await _dbContext.Orders
+                .FirstOrDefaultAsync(x => x.OrderNumber == merchant_oid);
 
-                var company = await _dbContext.Companies
-                    .FirstOrDefaultAsync(x => x.UniqId == companyUniqId);
+            var company = await _dbContext.Companies.FirstOrDefaultAsync(x => x.Id == order.CompanyId);
 
-                var latestPayment = await _dbContext.CompanyPurchases
-                    .Where(x => x.CompanyId == company.Id)
-                    .OrderByDescending(x => x.CreateAt)
-                    .FirstOrDefaultAsync();
 
-                var package = await _dbContext.PackageTypes
-                    .FirstOrDefaultAsync(x => x.Id == latestPayment.PackageTypeId);
+            var latestPayment = await _dbContext.CompanyPurchases
+                .Where(x => x.CompanyId == company.Id)
+                .OrderByDescending(x => x.CreateAt)
+                .FirstOrDefaultAsync();
 
-                ViewBag.Company = company;
-                ViewBag.Package = package;
-                ViewBag.Payment = latestPayment;
-                ViewBag.OrderId = merchant_oid;
-            }
+            var package = await _dbContext.PackageTypes
+                .FirstOrDefaultAsync(x => x.Id == latestPayment.PackageTypeId);
+
+            ViewBag.Company = company;
+            ViewBag.Package = package;
+            ViewBag.Payment = latestPayment;
+            ViewBag.OrderId = merchant_oid;
+
 
             return View();
         }
@@ -268,17 +309,13 @@ public class PaymentController : Controller
         try
         {
             // Sipariş bilgilerini parse et
-            var orderParts = merchant_oid.Split('_');
-            if (orderParts.Length >= 4)
-            {
-                var companyUniqId = int.Parse(orderParts[2]);
+            var order = await _dbContext.Orders.FirstOrDefaultAsync(x => x.OrderNumber == merchant_oid);
 
-                var company = await _dbContext.Companies
-                    .FirstOrDefaultAsync(x => x.UniqId == companyUniqId);
+            var company = await _dbContext.Companies.FirstOrDefaultAsync(x => x.Id == order.CompanyId);
 
-                ViewBag.Company = company;
-                ViewBag.OrderId = merchant_oid;
-            }
+            ViewBag.Company = company;
+            ViewBag.OrderId = merchant_oid;
+
 
             return View();
         }

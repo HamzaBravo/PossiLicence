@@ -14,16 +14,21 @@ public class LicenceController(DBContext _dBContext) : ControllerBase
     {
         var datetime = DateTime.Now;
 
+        if (companyId.ToString().Length != 5 ||!int.TryParse(companyId.ToString(), out int parsedId))
+            return StatusCode(404, new { message = "Geçersiz firma id si" });
+     
         var company = await _dBContext.Companies.AsNoTracking().FirstOrDefaultAsync(x => x.UniqId == companyId);
 
         if (company is null)
-            return StatusCode(StatusCodes.Status204NoContent, "Firma Bulunamadı");
+            return StatusCode(404, new { message = "Firma Bulunamadı" });
 
         if (company.EndDate is null)
-            return StatusCode(StatusCodes.Status204NoContent, "Firma Daha Önce Satın Alım Yapmamış.");
+            return StatusCode(422, new { message = "Firma Daha Önce Satın Alım Yapmamış." });
+
 
         if (company.EndDate < datetime)
-            return StatusCode(StatusCodes.Status204NoContent, "Hizmet Süresi Sona Ermiş");
+            return StatusCode(422, new { message = "Hizmet Süresi Sona Ermiş" });
+
 
         return StatusCode(StatusCodes.Status200OK, "Hizmet Süresi Devam Ediyor");
     }

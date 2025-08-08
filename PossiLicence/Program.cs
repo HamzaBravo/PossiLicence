@@ -11,7 +11,7 @@ builder.Services.AddControllersWithViews();
 
 // DBContext yapýlandýrmasý
 builder.Services.AddDbContext<DBContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("HamzaLocal")), ServiceLifetime.Scoped);
+    options.UseSqlServer(builder.Configuration.GetConnectionString("LiveServer")), ServiceLifetime.Scoped);
 
 
 // Authentication ve Authorization yapýlandýrmasý

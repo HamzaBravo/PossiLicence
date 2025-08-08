@@ -94,7 +94,7 @@
                                             <div class="packages-grid">
                                                 @foreach (var package in packages.Where(p => p != null))
                                                 {
-                                                    <div class="package-card" data-package-id="@package.Id" onclick="selectPackage(this)">
+                                                    <div class="package-card" data-package-id="@package.Id" style="cursor: pointer;">
                                                         <div class="package-header">
                                                             <h5>@package.Caption</h5>
                                                             <div class="package-price">
@@ -119,7 +119,7 @@
                                                             </div>
                                                         </div>
                                                         <div class="package-select">
-                                                            <button type="button" class="btn btn-primary-custom">
+                                                            <button type="button" class="btn btn-primary-custom package-select-btn">
                                                                 <i class="fas fa-check me-2"></i>
                                                                 Bu Paketi Seç
                                                             </button>
@@ -128,14 +128,7 @@
                                                 }
                                             </div>
                                         }
-                                        else
-                                        {
-                                            <div class="alert alert-warning text-center">
-                                                <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
-                                                <h5>Henüz Paket Bulunmuyor</h5>
-                                                <p>Şu anda satın alınabilir paket bulunmamaktadır.</p>
-                                            </div>
-                                        }
+
                                     </div>
 
                                     <!-- Step 2: Customer Information -->
@@ -234,10 +227,10 @@
                                 </div>
 
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" id="prevBtn" onclick="previousStep()" style="display: none;">
+                                    <button type="button" class="btn btn-secondary" id="prevBtn" style="display: none;">
                                         <i class="fas fa-arrow-left me-2"></i>Geri
                                     </button>
-                                    <button type="button" class="btn btn-primary-custom" id="nextBtn" onclick="nextStep()" disabled>
+                                    <button type="button" class="btn btn-primary-custom" id="nextBtn" disabled>
                                         Devam Et<i class="fas fa-arrow-right ms-2"></i>
                                     </button>
                                 </div>
