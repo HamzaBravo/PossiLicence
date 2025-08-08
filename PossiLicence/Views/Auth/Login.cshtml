@@ -1,0 +1,95 @@
+﻿@{
+    ViewData["Title"] = "Admin Girişi";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - PossiLicence</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/login-page.css" asp-append-version="true" />
+</head>
+<body class="login-page">
+    <div class="container login-container">
+        <div class="card login-card">
+            <div class="login-header">
+                <div class="brand-logo">
+                    PL
+                </div>
+                <h4>Admin Paneli</h4>
+                <div class="subtitle">Lisans Yönetim Sistemi</div>
+            </div>
+            <div class="login-body">
+                @if (!string.IsNullOrEmpty(ViewBag.Error))
+                {
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        @ViewBag.Error
+                    </div>
+                }
+
+                <form method="post" id="loginForm">
+                    <div class="form-floating">
+                        <input type="text" class="form-control" id="username" name="username"
+                               placeholder="Kullanıcı Adı" required autocomplete="username">
+                        <label for="username">
+                            <i class="fas fa-user"></i> Kullanıcı Adı
+                        </label>
+                    </div>
+
+                    <div class="form-floating">
+                        <input type="password" class="form-control" id="password" name="password"
+                               placeholder="Şifre" required autocomplete="current-password">
+                        <label for="password">
+                            <i class="fas fa-lock"></i> Şifre
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-login" id="loginBtn">
+                        <span class="btn-text">Giriş Yap</span>
+                        <span class="btn-loading d-none">
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            Giriş Yapılıyor...
+                        </span>
+                    </button>
+                </form>
+            </div>
+            <div class="login-footer">
+                © 2025 PossiLicence - Tüm hakları saklıdır.
+            </div>
+        </div>
+    </div>
+
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Optional: Add some interactivity -->
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function() {
+            const btn = document.getElementById('loginBtn');
+            const btnText = btn.querySelector('.btn-text');
+            const btnLoading = btn.querySelector('.btn-loading');
+
+            btnText.classList.add('d-none');
+            btnLoading.classList.remove('d-none');
+            btn.disabled = true;
+        });
+
+        // Simple form validation feedback
+        const inputs = document.querySelectorAll('.form-control');
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                if (this.value.trim() === '') {
+                    this.classList.add('is-invalid');
+                } else {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,318 @@
+﻿/* Dashboard Custom Styles */
+body.dashboard-page {
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Top Navigation */
+.top-nav {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.navbar-brand {
+    color: white !important;
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.navbar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.8) !important;
+    padding: 15px 20px !important;
+    transition: all 0.3s ease;
+    border-radius: 0;
+}
+
+    .navbar-nav .nav-link:hover,
+    .navbar-nav .nav-link.active {
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
+    }
+
+    .navbar-nav .nav-link i {
+        margin-right: 8px;
+    }
+
+.logout-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    margin: 8px 0;
+}
+
+    .logout-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        transform: translateY(-1px);
+    }
+
+/* Main Content */
+.main-content {
+    padding: 0;
+}
+
+/* Dashboard Content */
+.dashboard-content {
+    padding: 30px;
+}
+
+/* Stats Cards - Smaller Size */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    border: none;
+}
+
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    }
+
+.stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.stat-title {
+    color: #6c757d;
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+.stat-icon {
+    width: 35px;
+    height: 35px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    color: white;
+}
+
+.stat-value {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: #212529;
+    margin: 0;
+}
+
+.stat-change {
+    font-size: 0.8rem;
+    margin-top: 6px;
+}
+
+    .stat-change.positive {
+        color: #28a745;
+    }
+
+    .stat-change.negative {
+        color: #dc3545;
+    }
+
+/* Icon Colors */
+.icon-companies {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.icon-packages {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.icon-active {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.icon-expired {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
+
+/* Content Cards */
+.content-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.content-card-header {
+    padding: 20px 25px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.content-card-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #212529;
+}
+
+.content-card-body {
+    padding: 25px;
+}
+
+/* Buttons */
+.btn-primary-custom {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    color: white;
+}
+
+    .btn-primary-custom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+
+.btn-success-custom {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    color: white;
+    font-size: 0.85rem;
+}
+
+.btn-warning-custom {
+    background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%);
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    color: white;
+    font-size: 0.85rem;
+}
+
+.btn-danger-custom {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    color: white;
+    font-size: 0.85rem;
+}
+
+/* Tables */
+.table-custom {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+    .table-custom th {
+        background-color: #f8f9fa;
+        color: #495057;
+        font-weight: 600;
+        border-top: none;
+        border-bottom: 2px solid #dee2e6;
+        padding: 12px 10px;
+        font-size: 0.85rem;
+    }
+
+    .table-custom td {
+        padding: 12px 10px;
+        vertical-align: middle;
+        border-top: 1px solid #dee2e6;
+    }
+
+/* Modal Customizations */
+.modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+    border-bottom: none;
+}
+
+.modal-title {
+    font-weight: 600;
+}
+
+.btn-close {
+    filter: invert(1);
+}
+
+/* Form Controls */
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Badge Styles */
+.badge-active {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.badge-expired {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+}
+
+.badge-pending {
+    background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%);
+    color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dashboard-content {
+        padding: 15px;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 10px;
+    }
+
+    .stat-card {
+        padding: 15px;
+    }
+
+    .stat-value {
+        font-size: 1.4rem;
+    }
+}
