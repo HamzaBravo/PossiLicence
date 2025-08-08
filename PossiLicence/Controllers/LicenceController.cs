@@ -9,8 +9,8 @@ namespace PossiLicence.Controllers;
 [ApiController]
 public class LicenceController(DBContext _dBContext) : ControllerBase
 {
-    [HttpGet("checked-licance")]
-    public async Task<IActionResult> CheckedLicanceAsync(int companyId)
+    [HttpGet("checked-licence")]
+    public async Task<IActionResult> CheckedLicenceAsync(int companyId)
     {
         var datetime = DateTime.Now;
 
