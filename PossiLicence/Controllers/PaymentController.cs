@@ -23,7 +23,7 @@ public class PaymentController : Controller
     }
 
 
-    // GET: payment/{uniqId}
+    // PaymentController.cs - Index methodunu güncelle
     [HttpGet("{uniqId}")]
     public async Task<IActionResult> Index(int uniqId)
     {
@@ -33,8 +33,26 @@ public class PaymentController : Controller
         if (company == null)
             return NotFound("Firma bulunamadı.");
 
+        // Firma'ya tanımlı paketleri getir
+        List<Guid> allowedPackageIds = new List<Guid>();
+
+        if (!string.IsNullOrEmpty(company.Packages))
+        {
+            try
+            {
+                var packageStrings = System.Text.Json.JsonSerializer.Deserialize<List<string>>(company.Packages);
+                allowedPackageIds = packageStrings.Where(p => Guid.TryParse(p, out _))
+                                                .Select(p => Guid.Parse(p))
+                                                .ToList();
+            }
+            catch
+            {
+                // JSON parse hatası durumunda boş liste
+            }
+        }
+
         var packages = await _dbContext.PackageTypes
-            .Where(x => !x.IsDeleted)
+            .Where(x => !x.IsDeleted && allowedPackageIds.Contains(x.Id))
             .OrderBy(x => x.Price)
             .ToListAsync();
 

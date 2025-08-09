@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PossiLicence.Context;
+using PossiLicence.Dtos;
 using System.Security.Claims;
 
 namespace PossiLicence.Controllers
@@ -26,6 +27,44 @@ namespace PossiLicence.Controllers
             return View();
         }
 
+
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                if (request.NewPassword != request.ConfirmPassword)
+                    return BadRequest(new { message = "Yeni şifreler eşleşmiyor." });
+
+                var adminIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (adminIdClaim == null || !Guid.TryParse(adminIdClaim.Value, out Guid adminId))
+                {
+                    return Unauthorized(new { message = "Geçersiz kullanıcı." });
+                }
+
+                var admin = await _dbContext.Admins.FindAsync(adminId);
+                if (admin == null)
+                    return NotFound(new { message = "Kullanıcı bulunamadı." });
+
+                // Mevcut şifreyi kontrol et
+                if (admin.Password != request.CurrentPassword)
+                    return BadRequest(new { message = "Mevcut şifre hatalı." });
+
+                // Yeni şifreyi kaydet
+                admin.Password = request.NewPassword;
+                await _dbContext.SaveChangesAsync();
+
+                return Ok(new { message = "Şifre başarıyla değiştirildi." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Şifre değiştirilirken hata oluştu.", error = ex.Message });
+            }
+        }
+
         [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> Login(string username, string password)
@@ -37,7 +76,7 @@ namespace PossiLicence.Controllers
             }
 
             var admin = await _dbContext.Admins
-                .FirstOrDefaultAsync(x => x.Username == username && x.Password == password);
+                .FirstOrDefaultAsync(x => x.PhoneNumber == username && x.Password == password);
 
             if (admin == null)
             {
@@ -47,7 +86,7 @@ namespace PossiLicence.Controllers
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, admin.Username),
+                new Claim(ClaimTypes.Name, admin.FullName),
                 new Claim(ClaimTypes.NameIdentifier, admin.Id.ToString())
             };
 

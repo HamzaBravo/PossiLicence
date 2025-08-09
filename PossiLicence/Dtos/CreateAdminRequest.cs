@@ -1,11 +1,10 @@
-﻿namespace PossiLicence.Entityies;
+﻿namespace PossiLicence.Dtos;
 
-public sealed class AdminDbEntity:BaseDbEntity
+public class CreateAdminRequest
 {
     public string FullName { get; set; }
     public string PhoneNumber { get; set; }
     public string Password { get; set; }
     public bool IsSuperAdmin { get; set; } = false;
-    public string Permissions { get; set; }
-
+    public List<string> Permissions { get; set; } = new List<string>();
 }

@@ -3,6 +3,11 @@
 let currentCompanyId = null;
 let currentDeleteCompanyId = null;
 
+let currentUserId = null;
+let currentDeleteUserId = null;
+let currentUserPermissions = [];
+let isSuperAdmin = false;
+
 // Tab switching functions
 function showDashboard() {
     hideAllViews();
@@ -10,6 +15,14 @@ function showDashboard() {
     setActiveTab('Dashboard');
     loadDashboardStats();
     loadRecentActivities(); // Add this line
+    checkUserPermissions(); // Yeni eklenen
+}
+
+function showUsers() {
+    hideAllViews();
+    document.getElementById('users-view').style.display = 'block';
+    setActiveTab('Kullanıcılar');
+    loadUsers();
 }
 
 function showCompanies() {
@@ -17,6 +30,129 @@ function showCompanies() {
     document.getElementById('companies-view').style.display = 'block';
     setActiveTab('Firmalar');
     loadCompanies();
+}
+
+
+// Kullanıcının yetkilerini kontrol eden fonksiyon
+function checkUserPermissions() {
+    // Bu bilgileri sunucudan almamız gerekiyor
+    // Şimdilik basit bir yapı kuralım
+    fetch('/api/Admin/current-user-info') // Bu endpoint'i ekleyeceğiz
+        .then(response => response.json())
+        .then(data => {
+            if (data) {
+                isSuperAdmin = data.isSuperAdmin;
+                currentUserPermissions = data.permissions || [];
+
+                updateUIBasedOnPermissions();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading user permissions:', error);
+            // Hata durumunda güvenli tarafta kalalım
+            isSuperAdmin = false;
+            currentUserPermissions = [];
+            updateUIBasedOnPermissions();
+        });
+}
+
+function updateUIBasedOnPermissions() {
+    // SuperAdmin ise her şeyi göster
+    if (isSuperAdmin) {
+        document.getElementById('packagesTab').style.display = 'block';
+        document.getElementById('usersTab').style.display = 'block';
+        return;
+    }
+
+    // SuperAdmin değilse paketleri ve kullanıcıları gizle
+    document.getElementById('packagesTab').style.display = 'none';
+    document.getElementById('usersTab').style.display = 'none';
+
+    // Firma işlemleri için butonları kontrol et
+    updateCompanyActionButtons();
+}
+
+function updateCompanyActionButtons() {
+    // Bu fonksiyon firma listesi yüklendiğinde çağrılacak
+    // Butonları yetkiye göre göster/gizle
+}
+
+// Şifre değiştirme modal'ını aç
+function openChangePasswordModal() {
+    document.getElementById('changePasswordForm').reset();
+
+    // Validation sınıflarını temizle
+    document.querySelectorAll('#changePasswordForm .form-control').forEach(input => {
+        input.classList.remove('is-valid', 'is-invalid');
+    });
+
+    const modal = new bootstrap.Modal(document.getElementById('changePasswordModal'));
+    modal.show();
+}
+
+// Şifre değiştir
+function changePassword() {
+    const form = document.getElementById('changePasswordForm');
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    // Form validasyonu
+    if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        return;
+    }
+
+    // Şifre eşleşme kontrolü
+    if (newPassword !== confirmPassword) {
+        document.getElementById('confirmPassword').classList.add('is-invalid');
+        showNotification('Şifreler eşleşmiyor!', 'error');
+        return;
+    }
+
+    const saveBtn = document.getElementById('changePasswordBtn');
+    const btnText = saveBtn.querySelector('.btn-text');
+    const btnLoading = saveBtn.querySelector('.btn-loading');
+
+    btnText.classList.add('d-none');
+    btnLoading.classList.remove('d-none');
+    saveBtn.disabled = true;
+
+    const formData = {
+        currentPassword: document.getElementById('currentPassword').value,
+        newPassword: newPassword,
+        confirmPassword: confirmPassword
+    };
+
+    fetch('/api/Auth/change-password', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                showNotification(data.message, 'success');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
+                modal.hide();
+            } else {
+                showNotification('Şifre değiştirme başarısız!', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error changing password:', error);
+            showNotification('Şifre değiştirilirken hata oluştu!', 'error');
+        })
+        .finally(() => {
+            btnText.classList.remove('d-none');
+            btnLoading.classList.add('d-none');
+            saveBtn.disabled = false;
+        });
+}
+
+function hasPermission(permission) {
+    return isSuperAdmin || currentUserPermissions.includes(permission);
 }
 
 function showPackages() {
@@ -37,6 +173,7 @@ function hideAllViews() {
     document.getElementById('companies-view').style.display = 'none';
     document.getElementById('packages-view').style.display = 'none';
     document.getElementById('reports-view').style.display = 'none';
+    document.getElementById('users-view').style.display = 'none'; // Yeni eklenen
 }
 
 function setActiveTab(activeTab) {
@@ -53,29 +190,95 @@ function setActiveTab(activeTab) {
     });
 }
 
-// Company functions
 function openCompanyModal(companyId = null) {
+    console.log('Opening company modal, companyId:', companyId);
+
     currentCompanyId = companyId;
+
+    // Element kontrolü ekleyelim
+    const modalTitle = document.getElementById('companyModalTitle');
+    const uniqIdDisplay = document.getElementById('uniqIdDisplay');
+    const modal = document.getElementById('companyModal');
+
+    if (!modalTitle || !uniqIdDisplay || !modal) {
+        console.error('Modal elements not found!');
+        showNotification('Modal açılırken hata oluştu!', 'error');
+        return;
+    }
 
     if (companyId) {
         // Edit mode
-        document.getElementById('companyModalTitle').textContent = 'Firmayı Düzenle';
-        document.getElementById('uniqIdDisplay').style.display = 'block';
+        modalTitle.textContent = 'Firmayı Düzenle';
+        uniqIdDisplay.style.display = 'block';
         loadCompanyData(companyId);
     } else {
         // Add mode
-        document.getElementById('companyModalTitle').textContent = 'Yeni Firma Ekle';
-        document.getElementById('uniqIdDisplay').style.display = 'none';
+        modalTitle.textContent = 'Yeni Firma Ekle';
+        uniqIdDisplay.style.display = 'none';
         resetCompanyForm();
+
+        // Paketleri yükle ama biraz bekle
+        setTimeout(() => {
+            loadPackagesForSelection();
+        }, 100);
     }
 
-    const modal = new bootstrap.Modal(document.getElementById('companyModal'));
-    modal.show();
+    const bootstrapModal = new bootstrap.Modal(modal);
+    bootstrapModal.show();
+}
+
+function loadPackagesForSelection() {
+    console.log('Loading packages for selection...');
+
+    const packagesList = document.getElementById('packagesList');
+
+    if (!packagesList) {
+        console.error('packagesList element not found!');
+        return;
+    }
+
+    packagesList.innerHTML = '<div class="text-muted"><i class="fas fa-spinner fa-spin"></i> Paketler yükleniyor...</div>';
+
+    fetch('/api/Package')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(packages => {
+            console.log('Packages loaded:', packages);
+
+            if (packages && packages.length > 0) {
+                packagesList.innerHTML = packages.map(package => `
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" 
+                               value="${package.id}" id="package_${package.id}">
+                        <label class="form-check-label" for="package_${package.id}">
+                            <strong>${package.caption}</strong><br>
+                            <small class="text-muted">${package.duration} - ${package.formattedPrice}</small><br>
+                            <small class="text-muted">${package.description}</small>
+                        </label>
+                    </div>
+                `).join('');
+            } else {
+                packagesList.innerHTML = '<div class="text-muted">Henüz paket bulunmamaktadır.</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading packages:', error);
+            packagesList.innerHTML = '<div class="text-danger">Paketler yüklenirken hata oluştu!</div>';
+        });
 }
 
 function resetCompanyForm() {
-    document.getElementById('companyForm').reset();
-    document.getElementById('companyId').value = '';
+    const form = document.getElementById('companyForm');
+    const notes = document.getElementById('notes');
+    const companyId = document.getElementById('companyId');
+
+    if (form) form.reset();
+    if (companyId) companyId.value = '';
+    if (notes) notes.value = '';
 
     // Remove validation classes
     document.querySelectorAll('#companyForm .form-control').forEach(input => {
@@ -93,11 +296,38 @@ function loadCompanyData(companyId) {
                 document.getElementById('fullName').value = data.fullName;
                 document.getElementById('phoneNumber').value = data.phoneNumber;
                 document.getElementById('displayUniqId').value = data.uniqId;
+                document.getElementById('notes').value = data.notes || ''; // Yeni eklenen
+
+                // Paketleri yükle ve seçilenleri işaretle
+                loadPackagesForSelection();
+
+                // Biraz bekle, paketler yüklensin sonra seçilenleri işaretle
+                setTimeout(() => {
+                    loadCompanySelectedPackages(companyId);
+                }, 500);
             }
         })
         .catch(error => {
             console.error('Error loading company data:', error);
             showNotification('Firma bilgileri yüklenirken hata oluştu!', 'error');
+        });
+}
+
+function loadCompanySelectedPackages(companyId) {
+    fetch(`/api/Company/${companyId}/packages`)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.packageIds) {
+                data.packageIds.forEach(packageId => {
+                    const checkbox = document.getElementById(`package_${packageId}`);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                    }
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading company packages:', error);
         });
 }
 
@@ -118,10 +348,18 @@ function saveCompany() {
     btnLoading.classList.remove('d-none');
     saveBtn.disabled = true;
 
+    // Seçili paketleri topla
+    const selectedPackages = [];
+    document.querySelectorAll('#packagesList input[type="checkbox"]:checked').forEach(checkbox => {
+        selectedPackages.push(checkbox.value);
+    });
+
     const formData = {
         companyName: document.getElementById('companyName').value,
         fullName: document.getElementById('fullName').value,
-        phoneNumber: document.getElementById('phoneNumber').value
+        phoneNumber: document.getElementById('phoneNumber').value,
+        notes: document.getElementById('notes').value, // Yeni eklenen
+        packageIds: selectedPackages // Yeni eklenen
     };
 
     const url = currentCompanyId ? `/api/Company/${currentCompanyId}` : '/api/Company';
@@ -141,6 +379,7 @@ function saveCompany() {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('companyModal'));
                 modal.hide();
                 loadCompanies(); // Reload companies list
+                loadDashboardStats(); // Update stats
             } else {
                 showNotification('İşlem başarısız!', 'error');
             }
@@ -517,8 +756,8 @@ function assignPackage(companyId, companyName, fullName, currentEndDate) {
         statusElement.style.display = 'none';
     }
 
-    // Load available packages
-    loadAvailablePackages();
+    // Load available packages - SADECE FİRMAYA TANMLI OLANLAR
+    loadCompanyVisiblePackages(companyId); // Değiştirdik
 
     // Hide package preview
     document.getElementById('packagePreview').style.display = 'none';
@@ -527,26 +766,54 @@ function assignPackage(companyId, companyName, fullName, currentEndDate) {
     modal.show();
 }
 
-function loadAvailablePackages() {
+// YENİ FONKSİYON - Sadece firmaya tanımlı paketleri yükle
+function loadCompanyVisiblePackages(companyId) {
     const selectElement = document.getElementById('selectedPackageId');
     selectElement.innerHTML = '<option value="">Paket seçiniz...</option>';
 
-    fetch('/api/Package')
+    // Önce firmaya tanımlı paket ID'lerini al
+    fetch(`/api/Company/${companyId}/packages`)
         .then(response => response.json())
-        .then(packages => {
-            if (packages && packages.length > 0) {
-                packages.forEach(package => {
-                    const option = document.createElement('option');
-                    option.value = package.id;
-                    option.textContent = `${package.caption} - ${package.duration} - ${package.formattedPrice}`;
-                    option.dataset.packageData = JSON.stringify(package);
-                    selectElement.appendChild(option);
-                });
+        .then(companyPackageData => {
+            const allowedPackageIds = companyPackageData.packageIds || [];
+
+            if (allowedPackageIds.length === 0) {
+                selectElement.innerHTML = '<option value="">Bu firmaya tanımlı paket bulunmamaktadır</option>';
+                showNotification('Bu firmaya tanımlı paket bulunmamaktadır!', 'warning');
+                return;
             }
+
+            // Tüm paketleri al ve sadece izin verilenleri filtrele
+            fetch('/api/Package')
+                .then(response => response.json())
+                .then(allPackages => {
+                    // Sadece firmaya tanımlı olan paketleri filtrele
+                    const filteredPackages = allPackages.filter(package =>
+                        allowedPackageIds.includes(package.id)
+                    );
+
+                    if (filteredPackages.length > 0) {
+                        filteredPackages.forEach(package => {
+                            const option = document.createElement('option');
+                            option.value = package.id;
+                            option.textContent = `${package.caption} - ${package.duration} - ${package.formattedPrice}`;
+                            option.dataset.packageData = JSON.stringify(package);
+                            selectElement.appendChild(option);
+                        });
+                    } else {
+                        selectElement.innerHTML = '<option value="">Bu firmaya uygun paket bulunmamaktadır</option>';
+                        showNotification('Bu firmaya tanımlı paket bulunmamaktadır!', 'warning');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading all packages:', error);
+                    selectElement.innerHTML = '<option value="">Paketler yüklenirken hata oluştu</option>';
+                });
         })
         .catch(error => {
-            console.error('Error loading packages:', error);
-            showNotification('Paketler yüklenirken hata oluştu!', 'error');
+            console.error('Error loading company packages:', error);
+            selectElement.innerHTML = '<option value="">Firma paketleri yüklenirken hata oluştu</option>';
+            showNotification('Firma paket bilgileri yüklenirken hata oluştu!', 'error');
         });
 }
 
@@ -755,4 +1022,258 @@ function showPurchaseHistory(companyId, companyName) {
 
     const modal = new bootstrap.Modal(document.getElementById('purchaseHistoryModal'));
     modal.show();
+}
+
+
+// Kullanıcı modal'ını aç
+function openUserModal(userId = null) {
+    currentUserId = userId;
+
+    if (userId) {
+        // Edit mode
+        document.getElementById('userModalTitle').textContent = 'Kullanıcıyı Düzenle';
+        document.getElementById('passwordSection').style.display = 'none'; // Düzenlemede şifre gizle
+        loadUserData(userId);
+    } else {
+        // Add mode
+        document.getElementById('userModalTitle').textContent = 'Yeni Kullanıcı Ekle';
+        document.getElementById('passwordSection').style.display = 'block';
+        resetUserForm();
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById('userModal'));
+    modal.show();
+}
+
+function resetUserForm() {
+    document.getElementById('userForm').reset();
+    document.getElementById('userId').value = '';
+
+    // Remove validation classes
+    document.querySelectorAll('#userForm .form-control').forEach(input => {
+        input.classList.remove('is-valid', 'is-invalid');
+    });
+
+    // İzin checkboxlarını temizle
+    document.querySelectorAll('#permissionsSection input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+
+    // SuperAdmin checkbox'ı temizle
+    document.getElementById('isSuperAdmin').checked = false;
+
+    // İzin bölümünü göster
+    document.getElementById('permissionsSection').style.display = 'block';
+}
+
+function loadUserData(userId) {
+    fetch(`/api/Admin/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data) {
+                document.getElementById('userId').value = data.id;
+                document.getElementById('userFullName').value = data.fullName;
+                document.getElementById('userPhoneNumber').value = data.phoneNumber;
+                document.getElementById('isSuperAdmin').checked = data.isSuperAdmin;
+
+                // İzinleri işaretle - BURASI DÜZELDİ
+                if (data.permissionsList && data.permissionsList.length > 0) {
+                    data.permissionsList.forEach(permission => {
+                        const checkbox = document.querySelector(`#permissionsSection input[value="${permission}"]`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                        }
+                    });
+                }
+
+                // SuperAdmin ise izin bölümünü gizle
+                togglePermissionsSection();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading user data:', error);
+            showNotification('Kullanıcı bilgileri yüklenirken hata oluştu!', 'error');
+        });
+}
+
+function saveUser() {
+    const form = document.getElementById('userForm');
+
+    if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        return;
+    }
+
+    const saveBtn = document.getElementById('saveUserBtn');
+    const btnText = saveBtn.querySelector('.btn-text');
+    const btnLoading = saveBtn.querySelector('.btn-loading');
+
+    btnText.classList.add('d-none');
+    btnLoading.classList.remove('d-none');
+    saveBtn.disabled = true;
+
+    // İzinleri topla
+    const permissions = [];
+    document.querySelectorAll('#permissionsSection input[type="checkbox"]:checked').forEach(checkbox => {
+        permissions.push(checkbox.value);
+    });
+
+    const formData = {
+        fullName: document.getElementById('userFullName').value,
+        phoneNumber: document.getElementById('userPhoneNumber').value,
+        isSuperAdmin: document.getElementById('isSuperAdmin').checked,
+        permissions: permissions
+    };
+
+    // Yeni kullanıcı ise şifre ekle
+    if (!currentUserId) {
+        formData.password = document.getElementById('userPassword').value;
+    }
+
+    const url = currentUserId ? `/api/Admin/${currentUserId}` : '/api/Admin';
+    const method = currentUserId ? 'PUT' : 'POST';
+
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+        .then(response => {
+            console.log('Response status:', response.status);
+
+            // Response başarılı değilse hata fırlat
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Response JSON mı kontrol et
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                return response.json();
+            } else {
+                throw new Error('Response is not JSON');
+            }
+        })
+        .then(data => {
+            console.log('Response data:', data);
+
+            if (data && data.message) {
+                showNotification(data.message, 'success');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('userModal'));
+                modal.hide();
+                loadUsers(); // Reload users list
+            } else {
+                showNotification('İşlem başarısız!', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error saving user:', error);
+            showNotification(`Kullanıcı kaydedilirken hata oluştu: ${error.message}`, 'error');
+        })
+        .finally(() => {
+            btnText.classList.remove('d-none');
+            btnLoading.classList.add('d-none');
+            saveBtn.disabled = false;
+        });
+}
+
+function loadUsers() {
+    const tableBody = document.getElementById('usersTable');
+    tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Yükleniyor...</td></tr>';
+
+    fetch('/api/Admin')
+        .then(response => response.json())
+        .then(users => {
+            if (users && users.length > 0) {
+                tableBody.innerHTML = users.map(user => `
+                    <tr>
+                        <td><strong>${user.fullName}</strong></td>
+                        <td>${user.phoneNumber}</td>
+                        <td>
+                            <span class="badge ${user.isSuperAdmin ? 'badge-active' : 'badge-pending'}">
+                                ${user.isSuperAdmin ? 'Süper Admin' : 'Normal Kullanıcı'}
+                            </span>
+                        </td>
+                        <td>
+                            ${user.isSuperAdmin ?
+                        '<small class="text-success">Tüm Yetkiler</small>' :
+                        (user.permissionsList.length > 0 ?
+                            user.permissionsList.map(p => getPermissionName(p)).join(', ') :
+                            '<small class="text-muted">İzin Yok</small>'
+                        )
+                    }
+                        </td>
+                        <td><span class="badge badge-pending">${user.companyCount}</span></td>
+                        <td>${formatDate(user.createAt)}</td>
+                        <td>
+                            <button class="btn btn-warning-custom btn-sm me-1" onclick="openUserModal('${user.id}')" title="Düzenle">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-danger-custom btn-sm" onclick="deleteUser('${user.id}')" title="Sil">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Henüz kullanıcı eklenmemiş.</td></tr>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading users:', error);
+            tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Kullanıcılar yüklenirken hata oluştu!</td></tr>';
+        });
+}
+
+function getPermissionName(permission) {
+    const permissionNames = {
+        'add_company': 'Ekleme',
+        'edit_company': 'Düzenleme',
+        'delete_company': 'Silme',
+        'assign_package': 'Paket Atama'
+    };
+    return permissionNames[permission] || permission;
+}
+
+function deleteUser(userId) {
+    if (confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) {
+        fetch(`/api/Admin/${userId}`, {
+            method: 'DELETE'
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    showNotification(data.message, 'success');
+                    loadUsers();
+                } else {
+                    showNotification('Silme işlemi başarısız!', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting user:', error);
+                showNotification('Kullanıcı silinirken hata oluştu!', 'error');
+            });
+    }
+}
+
+// SuperAdmin checkbox değiştiğinde izin bölümünü göster/gizle
+document.addEventListener('DOMContentLoaded', function () {
+    document.body.addEventListener('change', function (e) {
+        if (e.target.id === 'isSuperAdmin') {
+            togglePermissionsSection();
+        }
+    });
+});
+
+function togglePermissionsSection() {
+    const isSuperAdminChecked = document.getElementById('isSuperAdmin').checked;
+    const permissionsSection = document.getElementById('permissionsSection');
+
+    if (isSuperAdminChecked) {
+        permissionsSection.style.display = 'none';
+    } else {
+        permissionsSection.style.display = 'block';
+    }
 }
